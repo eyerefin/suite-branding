@@ -1,0 +1,7 @@
+include MANIFEST.in
+include README.md
+include requirements.txt
+include license.txt
+recursive-include pressply_branding *.py
+recursive-include pressply_branding/public *
+recursive-include pressply_branding/translations * 

@@ -1,0 +1,16 @@
+[project]
+name = "pressply_branding"
+version = "0.0.1"
+description = "Pressply Suite branding for ERPNext (v15)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [ { name = "Pressply", email = "support@pressply.com" } ]
+
+[tool.frappe]
+app_name = "pressply_branding"
+app_title = "Pressply Suite Branding"
+app_publisher = "Pressply"
+app_description = "Rename ERPNext labels and add route aliases"
+app_email = "support@pressply.com"
+app_license = "MIT" 
