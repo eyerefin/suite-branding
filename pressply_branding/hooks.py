@@ -6,8 +6,9 @@ app_email = "support@pressply.com"
 app_license = "MIT"
 
 # Include JS on Desk so route aliases and relabeling work
+# Use built asset path from build.json output so it loads from /assets
 app_include_js = [
-    "public/js/pressply_branding.js",
+    "/assets/pressply_branding/js/pressply_branding.js",
 ]
 
 # Hook entry points
