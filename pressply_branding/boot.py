@@ -23,6 +23,11 @@ def customize_boot(bootinfo):
         if sysdefaults.get("app_name") in (None, "ERPNext", "Frappe", "Frappe Framework"):
             sysdefaults["app_name"] = "Pressply Suite"
             bootinfo.sysdefaults = sysdefaults
+        # Ensure OTP issuer shows branded name on 2FA screens and tokens
+        otp_issuer = sysdefaults.get("otp_issuer_name")
+        if otp_issuer in (None, "ERPNext", "Frappe", "Frappe Framework"):
+            sysdefaults["otp_issuer_name"] = "Pressply Suite"
+            bootinfo.sysdefaults = sysdefaults
 
         # Overwrite document title template if available
         if getattr(bootinfo, "website_settings", None):

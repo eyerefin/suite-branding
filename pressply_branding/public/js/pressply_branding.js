@@ -26,6 +26,20 @@
     } catch (_) {}
   }
 
+  function observeTitle() {
+    try {
+      const titleEl = document.querySelector('head > title');
+      if (!titleEl || window.__pressply_title_observer) return;
+      const obs = new MutationObserver(() => {
+        ensureBrandedTitle();
+      });
+      obs.observe(titleEl, { subtree: true, characterData: true, childList: true });
+      window.__pressply_title_observer = obs;
+      // Also brand once now
+      ensureBrandedTitle();
+    } catch (_) {}
+  }
+
   function replaceStaticWebsiteText(root) {
     if (!root) return;
     const textNodesWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -37,6 +51,11 @@
       [/Powered by Frappe/g, 'Powered by Pressply Suite'],
       [/Login to Frappe/g, 'Login to Pressply Suite'],
       [/Create a Frappe Account/g, 'Create a Pressply Suite Account'],
+      [/Let's begin your journey with ERPNext/g, "Let's begin your journey with Pressply Suite"],
+      [/Let’s begin your journey with ERPNext/g, "Let’s begin your journey with Pressply Suite"],
+      [/Welcome to ERPNext/g, 'Welcome to Pressply Suite'],
+      [/Get Started with ERPNext/g, 'Get Started with Pressply Suite'],
+      [/Start your journey with ERPNext/g, 'Start your journey with Pressply Suite'],
     ];
     const nodes = [];
     while (textNodesWalker.nextNode()) nodes.push(textNodesWalker.currentNode);
@@ -47,6 +66,24 @@
       });
       if (v !== n.nodeValue) n.nodeValue = v;
     });
+  }
+
+  function observeBodyText() {
+    try {
+      if (window.__pressply_text_observer) return;
+      const obs = new MutationObserver((mutations) => {
+        // Throttle by batching changes per tick
+        if (window.__pressply_text_tick) return;
+        window.__pressply_text_tick = setTimeout(() => {
+          window.__pressply_text_tick = null;
+          replaceStaticWebsiteText(document.body || document);
+        }, 100);
+      });
+      obs.observe(document.documentElement || document, { subtree: true, childList: true, characterData: true });
+      window.__pressply_text_observer = obs;
+      // Initial pass
+      replaceStaticWebsiteText(document.body || document);
+    } catch (_) {}
   }
 
   function rewriteLinksToAlias() {
@@ -141,7 +178,13 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    observeTitle();
+    observeBodyText();
     scheduleRelabeling();
+  });
+
+  window.addEventListener("load", () => {
+    ensureBrandedTitle();
   });
 
   window.addEventListener("popstate", () => {
