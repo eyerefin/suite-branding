@@ -89,7 +89,7 @@
   function rewriteLinksToAlias() {
     // Settings links
     document
-      .querySelectorAll('[data-route="erpnext-settings"], a[href="/app/erpnext-settings"]')
+      .querySelectorAll('a[data-route="erpnext-settings"], a[href="/app/erpnext-settings"]')
       .forEach((a) => {
         const alias = "/app/" + (targetToAlias["erpnext-settings"] || "pressply-settings");
         if (a.getAttribute("href") !== alias) a.setAttribute("href", alias);
@@ -110,7 +110,7 @@
 
     // Integrations links
     document
-      .querySelectorAll('[data-route="erpnext-integrations"], a[href="/app/erpnext-integrations"]')
+      .querySelectorAll('a[data-route="erpnext-integrations"], a[href="/app/erpnext-integrations"]')
       .forEach((a) => {
         const alias = "/app/" + (targetToAlias["erpnext-integrations"] || "pressply-integrations");
         if (a.getAttribute("href") !== alias) a.setAttribute("href", alias);
@@ -130,27 +130,37 @@
       });
   }
 
+  function isSidebarAnchor(el) {
+    try {
+      if (!el || el.tagName !== 'A') return false;
+      const container = el.closest('.desk-sidebar, .sidebar, .workspace-sidebar');
+      return !!container;
+    } catch (_) { return false; }
+  }
+
   function relabelUI() {
     const updates = [
       {
-        find: () => document.querySelectorAll('[data-route="pressply-settings"], [data-route="erpnext-settings"]'),
+        find: () => document.querySelectorAll('a[data-route="pressply-settings"], a[data-route="erpnext-settings"]'),
         apply: (el) => {
-          const label = el.querySelector('.label, .sidebar-item-label, .ellipsis');
+          if (!isSidebarAnchor(el)) return;
+          const label = el.querySelector('.label, .sidebar-item-label');
           if (label) label.textContent = "Pressply Suite Settings";
           el.setAttribute("title", "Pressply Suite Settings");
         },
       },
       {
-        find: () => document.querySelectorAll('[data-route="pressply-integrations"], [data-route="erpnext-integrations"]'),
+        find: () => document.querySelectorAll('a[data-route="pressply-integrations"], a[data-route="erpnext-integrations"]'),
         apply: (el) => {
-          const label = el.querySelector('.label, .sidebar-item-label, .ellipsis');
+          if (!isSidebarAnchor(el)) return;
+          const label = el.querySelector('.label, .sidebar-item-label');
           if (label) label.textContent = "Pressply Suite Integrations";
           el.setAttribute("title", "Pressply Suite Integrations");
         },
       },
       {
         // Page titles
-        find: () => document.querySelectorAll('.page-title, h3'),
+        find: () => document.querySelectorAll('.page-head .page-title'),
         apply: (el) => {
           const t = (el.textContent || "").trim();
           if (t === "ERPNext Settings") el.textContent = "Pressply Suite Settings";
