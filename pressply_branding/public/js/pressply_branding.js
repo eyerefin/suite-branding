@@ -5,6 +5,7 @@
   - Fallback DOM relabeling (translations cover most cases) without stripping icons
 */
 (function () {
+  console.log('[pressply_branding] client script loaded');
   const targetToAlias = {
     "erpnext-settings": "pressply-settings",
     "erpnext-integrations": "pressply-integrations",
