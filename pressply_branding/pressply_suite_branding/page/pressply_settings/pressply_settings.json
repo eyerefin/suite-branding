@@ -1,5 +1,6 @@
 {
   "doctype": "Page",
+  "name": "pressply-settings",
   "page_name": "pressply-settings",
   "title": "Pressply Suite Settings",
   "module": "Pressply Suite Branding",
