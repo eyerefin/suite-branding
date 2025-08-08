@@ -5,28 +5,34 @@ frappe.pages['pressply-integrations'].on_page_load = function (wrapper) {
     single_column: true
   });
 
-  try {
-    const head = wrapper.closest('.page-container')?.querySelector('.page-head');
-    if (head) head.style.display = 'none';
-  } catch (_) {}
+  function try_mount_source_page() {
+    const src = frappe.pages && frappe.pages['erpnext-integrations'];
+    if (src && typeof src.on_page_load === 'function') {
+      try {
+        const body = wrapper.querySelector('.page-body') || wrapper;
+        if (body) body.innerHTML = '';
+        src.on_page_load(wrapper);
+        if (typeof src.on_page_show === 'function') {
+          try { src.on_page_show(wrapper); } catch (_) {}
+        }
+        return true;
+      } catch (e) {
+        // ignore; will retry
+      }
+    }
+    return false;
+  }
 
-  try {
-    wrapper.style.padding = '0';
-    const main = wrapper.querySelector('.layout-main-section');
-    if (main) main.style.padding = '0';
-  } catch (_) {}
-
-  const src = '/app/erpnext-integrations' + window.location.search + window.location.hash;
-  const iframe = document.createElement('iframe');
-  iframe.src = src;
-  iframe.style.width = '100%';
-  iframe.style.height = '100vh';
-  iframe.style.border = '0';
-  iframe.setAttribute('referrerpolicy', 'same-origin');
-
-  const body = wrapper.querySelector('.page-body') || wrapper;
-  body.innerHTML = '';
-  body.appendChild(iframe);
+  if (!try_mount_source_page()) {
+    let attempts = 0;
+    const maxAttempts = 20;
+    const timer = setInterval(() => {
+      attempts += 1;
+      if (try_mount_source_page() || attempts >= maxAttempts) {
+        clearInterval(timer);
+      }
+    }, 250);
+  }
 };
 
 frappe.pages['pressply-integrations'].on_page_show = function () {

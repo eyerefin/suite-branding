@@ -5,31 +5,38 @@ frappe.pages['pressply-settings'].on_page_load = function (wrapper) {
     single_column: true
   });
 
-  try {
-    // Hide the page header to avoid double headers
-    const head = wrapper.closest('.page-container')?.querySelector('.page-head');
-    if (head) head.style.display = 'none';
-  } catch (_) {}
+  // attempt to render ERPNext page content into our wrapper
+  function try_mount_source_page() {
+    const src = frappe.pages && frappe.pages['erpnext-settings'];
+    if (src && typeof src.on_page_load === 'function') {
+      try {
+        // clear body
+        const body = wrapper.querySelector('.page-body') || wrapper;
+        if (body) body.innerHTML = '';
+        // call source page loader using our wrapper
+        src.on_page_load(wrapper);
+        if (typeof src.on_page_show === 'function') {
+          try { src.on_page_show(wrapper); } catch (_) {}
+        }
+        return true;
+      } catch (e) {
+        // silently ignore; will retry
+      }
+    }
+    return false;
+  }
 
-  // Remove paddings for full-bleed iframe
-  try {
-    wrapper.style.padding = '0';
-    const main = wrapper.querySelector('.layout-main-section');
-    if (main) main.style.padding = '0';
-  } catch (_) {}
-
-  const src = '/app/erpnext-settings' + window.location.search + window.location.hash;
-  const iframe = document.createElement('iframe');
-  iframe.src = src;
-  iframe.style.width = '100%';
-  iframe.style.height = '100vh';
-  iframe.style.border = '0';
-  iframe.setAttribute('referrerpolicy', 'same-origin');
-
-  // Clear previous content and mount
-  const body = wrapper.querySelector('.page-body') || wrapper;
-  body.innerHTML = '';
-  body.appendChild(iframe);
+  if (!try_mount_source_page()) {
+    // poll briefly until ERPNext page module becomes available
+    let attempts = 0;
+    const maxAttempts = 20;
+    const timer = setInterval(() => {
+      attempts += 1;
+      if (try_mount_source_page() || attempts >= maxAttempts) {
+        clearInterval(timer);
+      }
+    }, 250);
+  }
 };
 
 frappe.pages['pressply-settings'].on_page_show = function () {
