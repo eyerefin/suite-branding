@@ -138,6 +138,14 @@
     } catch (_) { return false; }
   }
 
+  function isOnRoute(routeNames) {
+    try {
+      const p = (location.pathname || '') + (location.hash || '');
+      const routes = Array.isArray(routeNames) ? routeNames : [routeNames];
+      return routes.some((r) => p.includes('/app/' + r));
+    } catch (_) { return false; }
+  }
+
   function relabelUI() {
     const updates = [
       {
@@ -159,12 +167,17 @@
         },
       },
       {
-        // Page titles
+        // Page titles — only on target routes
         find: () => document.querySelectorAll('.page-head .page-title'),
         apply: (el) => {
-          const t = (el.textContent || "").trim();
-          if (t === "ERPNext Settings") el.textContent = "Pressply Suite Settings";
-          if (t === "ERPNext Integrations") el.textContent = "Pressply Suite Integrations";
+          if (isOnRoute(['erpnext-settings','pressply-settings'])) {
+            const t = (el.textContent || '').trim();
+            if (t === "ERPNext Settings") el.textContent = "Pressply Suite Settings";
+          }
+          if (isOnRoute(['erpnext-integrations','pressply-integrations'])) {
+            const t2 = (el.textContent || '').trim();
+            if (t2 === "ERPNext Integrations") el.textContent = "Pressply Suite Integrations";
+          }
         },
       },
     ];
