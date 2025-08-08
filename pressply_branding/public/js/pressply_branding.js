@@ -1,14 +1,18 @@
 /*
   Pressply Suite Branding helper
   - Route aliases: /app/pressply-settings, /app/pressply-integration(s)
-  - Fallback DOM relabeling (translations cover most cases)
+  - Keep URL as pressply-* while loading ERPNext pages underneath
+  - Fallback DOM relabeling (translations cover most cases) without stripping icons
 */
 (function () {
-  const aliasMap = {
+  const aliasToTarget = {
     "pressply-settings": "erpnext-settings",
-    "pressply-integration": "erpnext-integration",
-    "pressply-integrations": "erpnext-integration",
+    "pressply-integration": "erpnext-integrations",
+    "pressply-integrations": "erpnext-integrations",
   };
+
+  let isNavigatingToTarget = false;
+  let lastAliasUsed = null;
 
   function getDeskSlug() {
     const path = window.location.pathname || "";
@@ -17,16 +21,35 @@
     return parts[1] || "";
   }
 
-  function normalizeAliasRoute() {
+  function navigateAliasKeepingURL() {
     const slug = getDeskSlug();
-    const target = aliasMap[slug];
+    const target = aliasToTarget[slug];
     if (!target) return;
 
-    const to = `/app/${target}` + window.location.search + window.location.hash;
-    if (window.location.pathname !== `/app/${target}`) {
+    // Avoid loops
+    if (isNavigatingToTarget) return;
+
+    lastAliasUsed = slug;
+    isNavigatingToTarget = true;
+
+    // Ask Frappe to load the actual page
+    if (window.frappe && frappe.set_route) {
+      frappe.set_route(target);
+      // After navigation settles, restore the alias in the URL bar
+      setTimeout(() => {
+        const aliasUrl = `/app/${lastAliasUsed}` + window.location.search + window.location.hash;
+        try {
+          window.history.replaceState({}, "", aliasUrl);
+        } catch (e) {
+          // ignore
+        }
+        isNavigatingToTarget = false;
+      }, 600);
+    } else {
+      // Fallback: direct replace, then reload (URL will switch back after load by our timer above)
+      const to = `/app/${target}` + window.location.search + window.location.hash;
       try {
         window.history.replaceState({}, "", to);
-        // Reload to let Frappe route to the correct view if needed
         setTimeout(() => window.location.reload(), 0);
       } catch (e) {
         window.location.assign(to);
@@ -35,47 +58,59 @@
   }
 
   function relabelUI() {
-    const replacements = [
+    const updates = [
       {
-        selector:
-          'a[href="/app/erpnext-settings"], a[href="#erpnext-settings"], [data-route="erpnext-settings"]',
-        text: "Pressply Suite Settings",
+        // Side menu / links: change label span only, preserve icon spans
+        find: () => document.querySelectorAll('[data-route="erpnext-settings"]'),
+        apply: (el) => {
+          const label = el.querySelector('.label, .sidebar-item-label, .ellipsis');
+          if (label) label.textContent = "Pressply Suite Settings";
+          el.setAttribute("title", "Pressply Suite Settings");
+        },
       },
       {
-        selector:
-          'a[href="/app/erpnext-integration"], a[href="#erpnext-integration"], [data-route="erpnext-integration"]',
-        text: "Pressply Suite Integrations",
+        find: () => document.querySelectorAll('[data-route="erpnext-integrations"]'),
+        apply: (el) => {
+          const label = el.querySelector('.label, .sidebar-item-label, .ellipsis');
+          if (label) label.textContent = "Pressply Suite Integrations";
+          el.setAttribute("title", "Pressply Suite Integrations");
+        },
       },
       {
-        selector: 'h3, .page-title, .ellipsis[title="ERPNext Settings"]',
-        text: "Pressply Suite Settings",
-      },
-      {
-        selector: 'h3, .page-title, .ellipsis[title="ERPNext Integrations"]',
-        text: "Pressply Suite Integrations",
+        // Page titles
+        find: () => document.querySelectorAll('.page-title, h3'),
+        apply: (el) => {
+          const t = (el.textContent || "").trim();
+          if (t === "ERPNext Settings") el.textContent = "Pressply Suite Settings";
+          if (t === "ERPNext Integrations") el.textContent = "Pressply Suite Integrations";
+        },
       },
     ];
 
-    replacements.forEach((r) => {
-      document.querySelectorAll(r.selector).forEach((el) => {
-        // Avoid clobbering if already updated
-        if (el.textContent && el.textContent.trim().length) {
-          el.textContent = r.text;
-        } else if (el.getAttribute && el.getAttribute("title")) {
-          el.setAttribute("title", r.text);
-        }
-      });
+    updates.forEach(({ find, apply }) => {
+      find().forEach((el) => apply(el));
     });
   }
 
-  // Run once on load and also on SPA navigation
-  document.addEventListener("DOMContentLoaded", () => {
-    normalizeAliasRoute();
+  function scheduleRelabeling() {
     relabelUI();
-    // Keep trying after SPA updates
-    setInterval(relabelUI, 2000);
+    // Re-apply periodically for SPA updates
+    if (!window.__pressply_relabel_timer) {
+      window.__pressply_relabel_timer = setInterval(relabelUI, 1500);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    navigateAliasKeepingURL();
+    scheduleRelabeling();
   });
 
-  window.addEventListener("popstate", normalizeAliasRoute);
-  window.addEventListener("hashchange", normalizeAliasRoute);
+  window.addEventListener("popstate", () => {
+    navigateAliasKeepingURL();
+    scheduleRelabeling();
+  });
+
+  window.addEventListener("hashchange", () => {
+    scheduleRelabeling();
+  });
 })(); 
