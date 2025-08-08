@@ -13,6 +13,19 @@
     "erpnext-integrations": "pressply-integrations",
   };
 
+  function ensureBrandedTitle() {
+    try {
+      const t = document.title || "";
+      if (/\b(ERPNext|Frappe)\b/i.test(t)) {
+        document.title = t.replace(/ERPNext|Frappe Framework|Frappe/gi, 'Pressply Suite');
+      }
+      // If title is very short or empty (common on login), set default
+      if (!document.title || document.title.trim().length < 2) {
+        document.title = 'Pressply Suite';
+      }
+    } catch (_) {}
+  }
+
   function replaceStaticWebsiteText(root) {
     if (!root) return;
     const textNodesWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -99,6 +112,7 @@
         },
       },
       {
+        // Page titles
         find: () => document.querySelectorAll('.page-title, h3'),
         apply: (el) => {
           const t = (el.textContent || "").trim();
@@ -115,6 +129,8 @@
     rewriteLinksToAlias();
     // Also rebrand public/login pages
     replaceStaticWebsiteText(document);
+    // Ensure <title> is branded
+    ensureBrandedTitle();
   }
 
   function scheduleRelabeling() {

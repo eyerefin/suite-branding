@@ -18,4 +18,6 @@ website_include_js = [
 
 # Hook entry points
 after_install = "pressply_branding.install.after_install"
-on_update = "pressply_branding.install.on_update" 
+on_update = "pressply_branding.install.on_update"
+# Ensure boot info carries our branding where possible
+boot_session = "pressply_branding.boot.customize_boot" 
