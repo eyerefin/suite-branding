@@ -8,7 +8,7 @@ app_license = "MIT"
 # Include JS on Desk so route aliases and relabeling work
 # Use built asset path from build.json output so it loads from /assets
 app_include_js = [
-    "/assets/pressply_branding/pressply_branding.bundle.js",
+    "/assets/pressply_branding/js/pressply_branding.js",
 ]
 
 # Hook entry points

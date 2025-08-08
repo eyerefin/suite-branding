@@ -1,5 +1,5 @@
 {
-  "pressply_branding.bundle.js": [
+  "js/pressply_branding.js": [
     "public/js/pressply_branding.js"
   ]
 } 
