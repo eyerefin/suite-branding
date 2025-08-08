@@ -11,6 +11,11 @@ app_include_js = [
     "/assets/pressply_branding/js/pressply_branding.js",
 ]
 
+# Include on website (login, public pages) for broad rebranding
+website_include_js = [
+    "/assets/pressply_branding/js/pressply_branding.js",
+]
+
 # Hook entry points
 after_install = "pressply_branding.install.after_install"
 on_update = "pressply_branding.install.on_update" 

@@ -3,6 +3,7 @@
   - Keep menu links on branded routes: /app/pressply-settings, /app/pressply-integrations
   - Rewrite menu links (href and data-route) and intercept clicks to load branded Desk Pages
   - Fallback DOM relabeling (translations cover most cases) without stripping icons
+  - Website/public pages: replace common static text occurrences (footer/login headings)
 */
 (function () {
   if (window.__pressply_branding_loaded) return;
@@ -11,6 +12,29 @@
     "erpnext-settings": "pressply-settings",
     "erpnext-integrations": "pressply-integrations",
   };
+
+  function replaceStaticWebsiteText(root) {
+    if (!root) return;
+    const textNodesWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const replacements = [
+      [/\bERPNext\b/g, 'Pressply Suite'],
+      [/\bFrappe Framework\b/g, 'Pressply Suite'],
+      [/\bFrappe\b/g, 'Pressply Suite'],
+      [/Powered by ERPNext/g, 'Powered by Pressply Suite'],
+      [/Powered by Frappe/g, 'Powered by Pressply Suite'],
+      [/Login to Frappe/g, 'Login to Pressply Suite'],
+      [/Create a Frappe Account/g, 'Create a Pressply Suite Account'],
+    ];
+    const nodes = [];
+    while (textNodesWalker.nextNode()) nodes.push(textNodesWalker.currentNode);
+    nodes.forEach((n) => {
+      let v = n.nodeValue;
+      replacements.forEach(([rx, to]) => {
+        v = v.replace(rx, to);
+      });
+      if (v !== n.nodeValue) n.nodeValue = v;
+    });
+  }
 
   function rewriteLinksToAlias() {
     // Settings links
@@ -89,6 +113,8 @@
     });
 
     rewriteLinksToAlias();
+    // Also rebrand public/login pages
+    replaceStaticWebsiteText(document);
   }
 
   function scheduleRelabeling() {
