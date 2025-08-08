@@ -12,5 +12,5 @@ app_include_js = [
 ]
 
 # Hook entry points
-after_install = "pressply_branding.utils.clear_cache"
-on_update = "pressply_branding.utils.clear_cache" 
+after_install = "pressply_branding.install.after_install"
+on_update = "pressply_branding.install.on_update" 

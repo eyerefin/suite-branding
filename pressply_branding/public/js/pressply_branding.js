@@ -2,6 +2,8 @@
   Pressply Suite Branding helper
   - Route aliases: /app/pressply-settings, /app/pressply-integration(s)
   - Keep URL as pressply-* while loading ERPNext pages underneath
+  - Rewrite menu links to pressply-* and intercept clicks to load target
+  - Patch history state methods so URL stays on pressply-* when app navigates
   - Fallback DOM relabeling (translations cover most cases) without stripping icons
 */
 (function () {
@@ -10,6 +12,51 @@
     "pressply-integration": "erpnext-integrations",
     "pressply-integrations": "erpnext-integrations",
   };
+
+  const targetToAlias = {
+    "erpnext-settings": "pressply-settings",
+    "erpnext-integrations": "pressply-integrations",
+  };
+
+  const targetPathToAliasPath = {
+    "/app/erpnext-settings": "/app/pressply-settings",
+    "/app/erpnext-integrations": "/app/pressply-integrations",
+  };
+
+  // Patch history methods to rewrite target paths to alias paths
+  (function patchHistoryForAliases() {
+    if (window.__pressply_history_patched) return;
+    const originalPush = history.pushState.bind(history);
+    const originalReplace = history.replaceState.bind(history);
+
+    function rewriteUrl(url) {
+      if (!url || typeof url !== "string") return url;
+      try {
+        const a = document.createElement("a");
+        a.href = url;
+        let path = a.pathname || "";
+        for (const targetPath in targetPathToAliasPath) {
+          if (path.startsWith(targetPath)) {
+            path = path.replace(targetPath, targetPathToAliasPath[targetPath]);
+            break;
+          }
+        }
+        a.pathname = path;
+        return a.pathname + a.search + a.hash;
+      } catch (_) {
+        return url;
+      }
+    }
+
+    history.pushState = function (state, title, url) {
+      return originalPush(state, title, rewriteUrl(url));
+    };
+    history.replaceState = function (state, title, url) {
+      return originalReplace(state, title, rewriteUrl(url));
+    };
+
+    window.__pressply_history_patched = true;
+  })();
 
   let isNavigatingToTarget = false;
   let lastAliasUsed = null;
@@ -21,32 +68,73 @@
     return parts[1] || "";
   }
 
+  function rewriteLinksToAlias() {
+    // Change href to alias, preserve data-route so Frappe knows where to go
+    document.querySelectorAll('[data-route="erpnext-settings"], a[href="/app/erpnext-settings"]').forEach((a) => {
+      const alias = "/app/" + (targetToAlias["erpnext-settings"] || "pressply-settings");
+      if (a.getAttribute("href") !== alias) a.setAttribute("href", alias);
+      a.addEventListener(
+        "click",
+        (e) => {
+          e.preventDefault();
+          lastAliasUsed = targetToAlias["erpnext-settings"];
+          if (window.frappe && frappe.set_route) {
+            frappe.set_route("erpnext-settings");
+            setTimeout(() => {
+              try {
+                window.history.replaceState({}, "", alias);
+              } catch (_) {}
+            }, 200);
+          }
+        },
+        { once: false }
+      );
+    });
+
+    document
+      .querySelectorAll('[data-route="erpnext-integrations"], a[href="/app/erpnext-integrations"]')
+      .forEach((a) => {
+        const alias = "/app/" + (targetToAlias["erpnext-integrations"] || "pressply-integrations");
+        if (a.getAttribute("href") !== alias) a.setAttribute("href", alias);
+        a.addEventListener(
+          "click",
+          (e) => {
+            e.preventDefault();
+            lastAliasUsed = targetToAlias["erpnext-integrations"];
+            if (window.frappe && frappe.set_route) {
+              frappe.set_route("erpnext-integrations");
+              setTimeout(() => {
+                try {
+                  window.history.replaceState({}, "", alias);
+                } catch (_) {}
+              }, 200);
+            }
+          },
+          { once: false }
+        );
+      });
+  }
+
   function navigateAliasKeepingURL() {
     const slug = getDeskSlug();
     const target = aliasToTarget[slug];
     if (!target) return;
 
-    // Avoid loops
     if (isNavigatingToTarget) return;
 
     lastAliasUsed = slug;
     isNavigatingToTarget = true;
 
-    // Ask Frappe to load the actual page
     if (window.frappe && frappe.set_route) {
       frappe.set_route(target);
-      // After navigation settles, restore the alias in the URL bar
       setTimeout(() => {
         const aliasUrl = `/app/${lastAliasUsed}` + window.location.search + window.location.hash;
         try {
           window.history.replaceState({}, "", aliasUrl);
-        } catch (e) {
-          // ignore
-        }
+        } catch (_) {}
         isNavigatingToTarget = false;
-      }, 600);
+      }, 300);
     } else {
-      // Fallback: direct replace, then reload (URL will switch back after load by our timer above)
       const to = `/app/${target}` + window.location.search + window.location.hash;
       try {
         window.history.replaceState({}, "", to);
@@ -60,7 +148,6 @@
   function relabelUI() {
     const updates = [
       {
-        // Side menu / links: change label span only, preserve icon spans
         find: () => document.querySelectorAll('[data-route="erpnext-settings"]'),
         apply: (el) => {
           const label = el.querySelector('.label, .sidebar-item-label, .ellipsis');
@@ -77,7 +164,6 @@
         },
       },
       {
-        // Page titles
         find: () => document.querySelectorAll('.page-title, h3'),
         apply: (el) => {
           const t = (el.textContent || "").trim();
@@ -90,11 +176,12 @@
     updates.forEach(({ find, apply }) => {
       find().forEach((el) => apply(el));
     });
+
+    rewriteLinksToAlias();
   }
 
   function scheduleRelabeling() {
     relabelUI();
-    // Re-apply periodically for SPA updates
     if (!window.__pressply_relabel_timer) {
       window.__pressply_relabel_timer = setInterval(relabelUI, 1500);
     }
@@ -113,4 +200,6 @@
   window.addEventListener("hashchange", () => {
     scheduleRelabeling();
   });
+
+  window.__pressply_branding_loaded = true;
 })(); 
