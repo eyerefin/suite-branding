@@ -7,7 +7,7 @@ app_license = "MIT"
 
 # Include JS on Desk so route aliases and relabeling work
 app_include_js = [
-    "/assets/pressply_branding/js/pressply_branding.js",
+    "public/js/pressply_branding.js",
 ]
 
 # Hook entry points
