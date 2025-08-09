@@ -61,13 +61,40 @@ def _patch_workspace_shortcuts():
             doc.save()
 
 
+def ensure_website_settings():
+    """Set basic website branding if defaults are present.
+    Useful for login label and title on public pages.
+    """
+    try:
+        ws = frappe.get_single("Website Settings")
+        changed = False
+        # Title prefix / brand
+        if (not ws.title_prefix) or ws.title_prefix in ("ERPNext", "Frappe", "Frappe Framework"):
+            ws.title_prefix = "Pressply Suite"
+            changed = True
+        if (not ws.brand_html) or ws.brand_html in ("ERPNext", "Frappe", "Frappe Framework"):
+            ws.brand_html = "Pressply Suite"
+            changed = True
+        # Login heading/label on login page
+        if (not getattr(ws, "login_label", None)) or ws.login_label in ("Login to Frappe", "Login to ERPNext"):
+            ws.login_label = "Login to Pressply Suite"
+            changed = True
+        if changed:
+            ws.flags.ignore_permissions = True
+            ws.save()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "pressply_branding.ensure_website_settings")
+
+
 def after_install():
     setup_pages()
     _patch_workspace_shortcuts()
+    ensure_website_settings()
     frappe.clear_cache()
 
 
 def on_update():
     setup_pages()
     _patch_workspace_shortcuts()
+    ensure_website_settings()
     frappe.clear_cache() 
