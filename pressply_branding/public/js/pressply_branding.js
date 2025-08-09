@@ -26,6 +26,20 @@
     } catch (_) {}
   }
 
+  function ensureBrandedRoute() {
+    try {
+      const pathname = location.pathname || '';
+      const map = {
+        '/app/erpnext-settings': '/app/pressply-settings',
+        '/app/erpnext-integrations': '/app/pressply-integrations',
+      };
+      const to = map[pathname];
+      if (to && pathname !== to) {
+        history.replaceState({}, '', to + location.search + location.hash);
+      }
+    } catch (_) {}
+  }
+
   function observeTitle() {
     try {
       const titleEl = document.querySelector('head > title');
@@ -189,8 +203,9 @@
     rewriteLinksToAlias();
     // Also rebrand public/login pages
     replaceStaticWebsiteText(document);
-    // Ensure <title> is branded
+    // Ensure branded helpers
     ensureBrandedTitle();
+    ensureBrandedRoute();
   }
 
   function scheduleRelabeling() {
@@ -203,18 +218,22 @@
   document.addEventListener("DOMContentLoaded", () => {
     observeTitle();
     observeBodyText();
+    ensureBrandedRoute();
     scheduleRelabeling();
   });
 
   window.addEventListener("load", () => {
     ensureBrandedTitle();
+    ensureBrandedRoute();
   });
 
   window.addEventListener("popstate", () => {
+    ensureBrandedRoute();
     scheduleRelabeling();
   });
 
   window.addEventListener("hashchange", () => {
+    ensureBrandedRoute();
     scheduleRelabeling();
   });
 
