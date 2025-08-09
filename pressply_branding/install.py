@@ -10,6 +10,8 @@ def ensure_page(name: str, title: str, module: str = "Pressply Suite Branding") 
         "title": title,
         "module": module,
         "public": 0,
+        "standard": 1,
+        "name": name,
     })
     doc.insert(ignore_permissions=True)
 

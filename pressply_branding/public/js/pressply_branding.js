@@ -20,7 +20,7 @@
         document.title = t.replace(/ERPNext|Frappe Framework|Frappe/gi, 'Pressply Suite');
       }
       // If title is very short or empty (common on login), set default
-      if (!document.title || document.title.trim().length < 2) {
+      if (!document.title || document.title.trim().length < 2 || document.title.trim() === 'Login') {
         document.title = 'Pressply Suite';
       }
     } catch (_) {}
